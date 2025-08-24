@@ -1,0 +1,511 @@
+(cd "$(git rev-parse --show-toplevel)" && git apply --3way <<'EOF'
+diff --git a/equipment-system-demo.html b/equipment-system-demo.html
+--- a/equipment-system-demo.html
++++ b/equipment-system-demo.html
+@@ -0,0 +1,504 @@
++<!DOCTYPE html>
++<html lang="en">
++<head>
++    <meta charset="UTF-8">
++    <meta name="viewport" content="width=device-width, initial-scale=1.0">
++    <title>Standalone Equipment System Demo</title>
++    <style>
++        body {
++            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
++            margin: 0;
++            padding: 20px;
++            background: #f8f9fa;
++            line-height: 1.6;
++        }
++        
++        .demo-header {
++            text-align: center;
++            margin-bottom: 30px;
++            padding: 20px;
++            background: white;
++            border-radius: 8px;
++            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
++        }
++        
++        .demo-header h1 {
++            margin: 0 0 10px 0;
++            color: #343a40;
++        }
++        
++        .demo-header p {
++            margin: 0;
++            color: #6c757d;
++        }
++        
++        .demo-controls {
++            margin-bottom: 20px;
++            padding: 15px;
++            background: white;
++            border-radius: 8px;
++            box-shadow: 0 2px 10px rgba(0,0,0,0.1);
++        }
++        
++        .demo-controls button {
++            padding: 8px 16px;
++            margin-right: 10px;
++            margin-bottom: 10px;
++            border: 1px solid #007bff;
++            background: #007bff;
++            color: white;
++            border-radius: 4px;
++            cursor: pointer;
++            font-size: 14px;
++            transition: all 0.2s ease;
++        }
++        
++        .demo-controls button:hover {
++            background: #0056b3;
++        }
++        
++        .demo-controls button.secondary {
++            background: white;
++            color: #007bff;
++        }
++        
++        .demo-controls button.secondary:hover {
++            background: #f8f9fa;
++        }
++        
++        .status {
++            padding: 10px;
++            margin: 10px 0;
++            border-radius: 4px;
++            font-family: monospace;
++            font-size: 12px;
++        }
++        
++        .status.info {
++            background: #d1ecf1;
++            color: #0c5460;
++            border: 1px solid #bee5eb;
++        }
++        
++        .status.success {
++            background: #d4edda;
++            color: #155724;
++            border: 1px solid #c3e6cb;
++        }
++        
++        .status.error {
++            background: #f8d7da;
++            color: #721c24;
++            border: 1px solid #f5c6cb;
++        }
++    </style>
++</head>
++<body>
++    <div class="demo-header">
++        <h1>🎒 Standalone Equipment System Demo</h1>
++        <p>A complete, independent equipment management system for RPG/character management applications.</p>
++    </div>
++
++    <div class="demo-controls">
++        <h3>Demo Controls</h3>
++        <button onclick="loadSampleData()">Load Sample Data</button>
++        <button onclick="addRandomItem()" class="secondary">Add Random Item</button>
++        <button onclick="clearData()" class="secondary">Clear All Data</button>
++        <button onclick="exportData()">Export Data</button>
++        <button onclick="showCurrentData()" class="secondary">Show Current Data</button>
++        
++        <div id="status" class="status info">
++            Equipment system ready. Click "Load Sample Data" to get started!
++        </div>
++    </div>
++
++    <!-- Equipment System Container -->
++    <div id="equipment-container"></div>
++
++    <!-- Include the standalone equipment system -->
++    <script src="standalone-equipment-system.js"></script>
++
++    <script>
++        // Initialize the equipment system
++        let equipmentSystem;
++        
++        // Sample data for demonstration
++        const sampleData = {
++            equipped: {
++                primaryWeapon: {
++                    id: 1,
++                    name: "Steel Longsword",
++                    type: "weapon",
++                    description: "A well-balanced sword made of high-quality steel",
++                    features: "Sharp edge, durable construction",
++                    diceRoll: "1d8+2",
++                    ability: "Strength"
++                },
++                secondaryWeapon: null,
++                armor: {
++                    id: 2,
++                    name: "Leather Armor",
++                    type: "armor",
++                    description: "Light but sturdy leather protection",
++                    features: "Flexible, quiet movement",
++                    ability: "Agility"
++                },
++                clothing: {
++                    id: 3,
++                    name: "Traveler's Cloak",
++                    type: "clothing",
++                    description: "A warm, weather-resistant cloak",
++                    features: "Water-resistant, warm"
++                },
++                jewelry: [
++                    {
++                        id: 4,
++                        name: "Silver Ring of Protection",
++                        type: "jewelry",
++                        description: "A simple silver band with protective enchantments",
++                        features: "+1 to defense rolls"
++                    },
++                    null,
++                    null
++                ],
++                belt: [
++                    {
++                        id: 5,
++                        name: "Health Potion",
++                        type: "potion",
++                        description: "Restores health when consumed",
++                        features: "Heals 2d4+2 HP"
++                    },
++                    {
++                        id: 6,
++                        name: "Lockpick Set",
++                        type: "tool",
++                        description: "Professional lockpicking tools",
++                        features: "+2 to lockpicking"
++                    },
++                    null,
++                    null,
++                    null
++                ]
++            },
++            inventory: {
++                'Gear': [
++                    {
++                        id: 1,
++                        name: "Steel Longsword",
++                        type: "weapon",
++                        description: "A well-balanced sword made of high-quality steel",
++                        features: "Sharp edge, durable construction",
++                        diceRoll: "1d8+2",
++                        ability: "Strength"
++                    },
++                    {
++                        id: 2,
++                        name: "Leather Armor",
++                        type: "armor",
++                        description: "Light but sturdy leather protection",
++                        features: "Flexible, quiet movement",
++                        ability: "Agility"
++                    },
++                    {
++                        id: 7,
++                        name: "Iron Dagger",
++                        type: "weapon",
++                        description: "A sharp, lightweight blade",
++                        diceRoll: "1d4+1",
++                        ability: "Finesse"
++                    },
++                    {
++                        id: 8,
++                        name: "Mana Potion",
++                        type: "potion",
++                        description: "Restores magical energy",
++                        features: "Restores 1d6 MP",
++                        tags: ["Magical", "Consumable"]
++                    }
++                ],
++                'Utility': [
++                    {
++                        id: 5,
++                        name: "Health Potion",
++                        type: "potion",
++                        description: "Restores health when consumed",
++                        features: "Heals 2d4+2 HP"
++                    },
++                    {
++                        id: 6,
++                        name: "Lockpick Set",
++                        type: "tool",
++                        description: "Professional lockpicking tools",
++                        features: "+2 to lockpicking"
++                    },
++                    {
++                        id: 9,
++                        name: "Rope (50ft)",
++                        type: "adventure",
++                        description: "Strong hemp rope",
++                        features: "50 feet, weight capacity 300 lbs"
++                    },
++                    {
++                        id: 10,
++                        name: "Trail Rations",
++                        type: "food",
++                        description: "Preserved food for travel",
++                        features: "Lasts 5 days"
++                    }
++                ],
++                'Quest': [
++                    {
++                        id: 11,
++                        name: "Ancient Map Fragment",
++                        type: "evidence",
++                        description: "A torn piece of an old treasure map",
++                        features: "Shows part of the Lost Temple location",
++                        tags: ["Rare", "Quest Item"]
++                    },
++                    {
++                        id: 12,
++                        name: "Crystal Orb",
++                        type: "magical",
++                        description: "A mysterious glowing orb",
++                        features: "Pulses with magical energy",
++                        tags: ["Magical", "Valuable"]
++                    }
++                ],
++                'Crafting': [
++                    {
++                        id: 13,
++                        name: "Iron Ingot",
++                        type: "materials",
++                        description: "Raw iron for crafting",
++                        features: "High quality metal"
++                    },
++                    {
++                        id: 14,
++                        name: "Enchanted Thread",
++                        type: "components",
++                        description: "Thread imbued with magical properties",
++                        features: "Used for magical tailoring",
++                        tags: ["Magical"]
++                    }
++                ],
++                'Personal': [
++                    {
++                        id: 3,
++                        name: "Traveler's Cloak",
++                        type: "clothing",
++                        description: "A warm, weather-resistant cloak",
++                        features: "Water-resistant, warm"
++                    },
++                    {
++                        id: 4,
++                        name: "Silver Ring of Protection",
++                        type: "jewelry",
++                        description: "A simple silver band with protective enchantments",
++                        features: "+1 to defense rolls"
++                    },
++                    {
++                        id: 15,
++                        name: "Family Locket",
++                        type: "personal",
++                        description: "A precious family heirloom",
++                        features: "Contains a small portrait",
++                        tags: ["Personal", "Valuable"]
++                    }
++                ]
++            },
++            gold: {
++                coins: 7,
++                pouches: 3,
++                chest: 0,
++                equippedPouches: 2,
++                banks: [
++                    {
++                        location: "Riverside Banking Guild",
++                        chests: 2
++                    },
++                    {
++                        location: "Capital City Vault",
++                        chests: 1
++                    }
++                ]
++            },
++            searchTerm: '',
++            selectedCategory: 'All',
++            selectedTags: [],
++            selectedBag: 'Adventurer\'s Backpack'
++        };
++
++        // Random item generators for demo
++        const randomWeapons = [
++            { name: "Battle Axe", type: "weapon", description: "Heavy two-handed axe", diceRoll: "1d12", ability: "Strength" },
++            { name: "Elven Bow", type: "weapon", description: "Elegant long bow", diceRoll: "1d8", ability: "Agility" },
++            { name: "Magic Staff", type: "weapon", description: "Wizard's staff", diceRoll: "1d6", ability: "Knowledge" },
++            { name: "Throwing Knives", type: "weapon", description: "Set of balanced throwing knives", diceRoll: "1d4", ability: "Finesse" }
++        ];
++
++        const randomArmor = [
++            { name: "Chain Mail", type: "armor", description: "Interlocked metal rings", features: "Medium protection" },
++            { name: "Studded Leather", type: "armor", description: "Leather with metal studs", features: "Light, flexible" },
++            { name: "Plate Armor", type: "armor", description: "Full metal plate protection", features: "Heavy, high protection" }
++        ];
++
++        const randomItems = [
++            { name: "Healing Salve", type: "potion", description: "Topical healing ointment" },
++            { name: "Grappling Hook", type: "tool", description: "For climbing walls" },
++            { name: "Torch", type: "adventure", description: "Provides light in darkness" },
++            { name: "Cheese Wheel", type: "food", description: "Aged cheddar cheese" },
++            { name: "Mysterious Key", type: "npc-item", description: "Opens an unknown lock" },
++            { name: "Ruby Necklace", type: "jewelry", description: "Expensive jewelry", tags: ["Valuable"] }
++        ];
++
++        function initializeSystem() {
++            equipmentSystem = new EquipmentSystem('equipment-container', {
++                onDataChanged: (data) => {
++                    console.log('Equipment data changed:', data);
++                    updateStatus('Data updated successfully', 'success');
++                },
++                onEncumbranceChanged: (info) => {
++                    console.log('Encumbrance changed:', info);
++                    if (info.isOverEncumbered && info.hasItems) {
++                        updateStatus(`Warning: Over-encumbered! ${info.current}/${info.max} units`, 'error');
++                    }
++                },
++                onEquipmentChanged: (equipped) => {
++                    console.log('Equipment changed:', equipped);
++                },
++                enableEncumbranceWarning: true,
++                enableGoldTracking: true,
++                enableBagSelection: true
++            });
++            
++            updateStatus('Equipment system initialized successfully!', 'success');
++        }
++
++        function loadSampleData() {
++            if (!equipmentSystem) {
++                initializeSystem();
++            }
++            equipmentSystem.setData(sampleData);
++            updateStatus('Sample data loaded! Try exploring the different tabs.', 'success');
++        }
++
++        function addRandomItem() {
++            if (!equipmentSystem) {
++                updateStatus('Please initialize the system first by loading sample data.', 'error');
++                return;
++            }
++
++            const allItems = [...randomWeapons, ...randomArmor, ...randomItems];
++            const randomItem = allItems[Math.floor(Math.random() * allItems.length)];
++            
++            // Add unique ID and random features
++            const newItem = {
++                ...randomItem,
++                id: Date.now(),
++                features: randomItem.features || `Random feature ${Math.floor(Math.random() * 100)}`
++            };
++
++            const data = equipmentSystem.getData();
++            const category = equipmentSystem.getItemCategory(newItem.type);
++            data.inventory[category].push(newItem);
++            
++            equipmentSystem.setData(data);
++            updateStatus(`Added "${newItem.name}" to ${category}!`, 'success');
++        }
++
++        function clearData() {
++            if (!equipmentSystem) {
++                updateStatus('No system to clear.', 'info');
++                return;
++            }
++
++            if (confirm('Are you sure you want to clear all equipment data?')) {
++                const defaultData = {
++                    equipped: {
++                        primaryWeapon: null,
++                        secondaryWeapon: null,
++                        armor: null,
++                        clothing: null,
++                        jewelry: [null, null, null],
++                        belt: [null, null, null, null, null]
++                    },
++                    inventory: {
++                        'Gear': [],
++                        'Utility': [],
++                        'Quest': [],
++                        'Crafting': [],
++                        'Personal': []
++                    },
++                    gold: {
++                        coins: 0,
++                        pouches: 0,
++                        chest: 0,
++                        equippedPouches: 0,
++                        banks: []
++                    },
++                    searchTerm: '',
++                    selectedCategory: 'All',
++                    selectedTags: [],
++                    selectedBag: 'Standard Backpack'
++                };
++                
++                equipmentSystem.setData(defaultData);
++                updateStatus('All data cleared!', 'info');
++            }
++        }
++
++        function exportData() {
++            if (!equipmentSystem) {
++                updateStatus('No system data to export.', 'error');
++                return;
++            }
++
++            const data = equipmentSystem.getData();
++            const jsonString = JSON.stringify(data, null, 2);
++            
++            // Create download link
++            const blob = new Blob([jsonString], { type: 'application/json' });
++            const url = URL.createObjectURL(blob);
++            const a = document.createElement('a');
++            a.href = url;
++            a.download = 'equipment-data.json';
++            document.body.appendChild(a);
++            a.click();
++            document.body.removeChild(a);
++            URL.revokeObjectURL(url);
++            
++            updateStatus('Equipment data exported to equipment-data.json!', 'success');
++        }
++
++        function showCurrentData() {
++            if (!equipmentSystem) {
++                updateStatus('No system data available.', 'error');
++                return;
++            }
++
++            const data = equipmentSystem.getData();
++            const encumbrance = equipmentSystem.getEncumbranceInfo();
++            
++            console.log('=== CURRENT EQUIPMENT DATA ===');
++            console.log('Full Data:', data);
++            console.log('Equipped Items:', equipmentSystem.getEquippedItems());
++            console.log('Inventory:', equipmentSystem.getInventory());
++            console.log('Encumbrance Info:', encumbrance);
++            
++            updateStatus('Current data logged to console (F12 to view)', 'info');
++        }
++
++        function updateStatus(message, type = 'info') {
++            const statusDiv = document.getElementById('status');
++            statusDiv.textContent = message;
++            statusDiv.className = `status ${type}`;
++        }
++
++        // Initialize the system when page loads
++        document.addEventListener('DOMContentLoaded', () => {
++            updateStatus('Page loaded. Equipment system ready for initialization.', 'info');
++        });
++    </script>
++</body>
++</html>
+EOF
+)
