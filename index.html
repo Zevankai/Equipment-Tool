@@ -1,0 +1,382 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Equipment Manager - Owlbear Rodeo Extension</title>
+    <style>
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            margin: 0;
+            padding: 16px;
+            background: #1a1a1a;
+            color: #ffffff;
+            line-height: 1.6;
+            min-height: 100vh;
+            box-sizing: border-box;
+        }
+        
+        * {
+            box-sizing: border-box;
+        }
+        
+        .extension-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .extension-header h1 {
+            margin: 0 0 8px 0;
+            color: #ffffff;
+            font-size: 1.5rem;
+            font-weight: 600;
+        }
+        
+        .extension-header p {
+            margin: 0;
+            color: rgba(255, 255, 255, 0.7);
+            font-size: 0.9rem;
+        }
+        
+        .loading {
+            text-align: center;
+            padding: 40px;
+            color: rgba(255, 255, 255, 0.7);
+        }
+        
+        .error {
+            background: rgba(220, 38, 38, 0.1);
+            border: 1px solid rgba(220, 38, 38, 0.3);
+            color: #fca5a5;
+            padding: 16px;
+            border-radius: 8px;
+            margin: 16px 0;
+        }
+        
+        .character-selector {
+            margin-bottom: 20px;
+            padding: 16px;
+            background: rgba(255, 255, 255, 0.05);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+        }
+        
+        .character-selector label {
+            display: block;
+            margin-bottom: 8px;
+            color: rgba(255, 255, 255, 0.9);
+            font-weight: 500;
+        }
+        
+        .character-selector select {
+            width: 100%;
+            padding: 8px 12px;
+            background: rgba(255, 255, 255, 0.1);
+            border: 1px solid rgba(255, 255, 255, 0.2);
+            border-radius: 6px;
+            color: #ffffff;
+            font-size: 14px;
+        }
+        
+        .character-selector select option {
+            background: #2a2a2a;
+            color: #ffffff;
+        }
+        
+        #equipment-container {
+            background: rgba(255, 255, 255, 0.02);
+            border-radius: 8px;
+            border: 1px solid rgba(255, 255, 255, 0.1);
+            overflow: hidden;
+        }
+        
+        /* Override equipment system styles for dark theme */
+        .equipment-container {
+            background: transparent !important;
+            color: #ffffff !important;
+        }
+        
+        .equipment-nav-btn {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .equipment-nav-btn.active {
+            background: rgba(59, 130, 246, 0.3) !important;
+            border-color: rgba(59, 130, 246, 0.5) !important;
+        }
+        
+        .equipment-section {
+            background: rgba(255, 255, 255, 0.03) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+        }
+        
+        .item-card {
+            background: rgba(255, 255, 255, 0.05) !important;
+            border: 1px solid rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+        }
+        
+        .modal-content {
+            background: #2a2a2a !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .form-input, .form-select, .form-textarea {
+            background: rgba(255, 255, 255, 0.1) !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+            color: #ffffff !important;
+        }
+        
+        .btn-primary {
+            background: rgba(59, 130, 246, 0.8) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(59, 130, 246, 0.5) !important;
+        }
+        
+        .btn-secondary {
+            background: rgba(255, 255, 255, 0.1) !important;
+            color: #ffffff !important;
+            border: 1px solid rgba(255, 255, 255, 0.2) !important;
+        }
+        
+        .alert-warning {
+            background: rgba(245, 158, 11, 0.1) !important;
+            border: 1px solid rgba(245, 158, 11, 0.3) !important;
+            color: #fbbf24 !important;
+        }
+    </style>
+</head>
+<body>
+    <div class="extension-header">
+        <h1>⚔️ Equipment Manager</h1>
+        <p>Manage your character's equipment, inventory, and gold</p>
+    </div>
+    
+    <div class="character-selector">
+        <label for="character-select">Select Character:</label>
+        <select id="character-select">
+            <option value="">Loading characters...</option>
+        </select>
+    </div>
+    
+    <div id="loading" class="loading">
+        Initializing Equipment Manager...
+    </div>
+    
+    <div id="error-container"></div>
+    
+    <div id="equipment-container" style="display: none;"></div>
+
+    <!-- Include the Owlbear Rodeo SDK -->
+    <script src="https://sdk.owlbear.rodeo/latest/owlbear-rodeo.min.js"></script>
+    
+    <!-- Include the Equipment System -->
+    <script src="standalone-equipment-system.js"></script>
+    
+    <script>
+        class OwlbearEquipmentExtension {
+            constructor() {
+                this.equipmentSystem = null;
+                this.currentCharacter = null;
+                this.characters = new Map();
+                this.initialized = false;
+            }
+
+            async init() {
+                try {
+                    // Initialize Owlbear Rodeo SDK
+                    await OBR.onReady();
+                    console.log('Owlbear Rodeo SDK ready');
+                    
+                    // Check if we're in a room
+                    const isReady = await OBR.scene.isReady();
+                    if (!isReady) {
+                        this.showError('Please join a room to use the Equipment Manager');
+                        return;
+                    }
+                    
+                    // Load character data
+                    await this.loadCharacters();
+                    
+                    // Set up character selector
+                    this.setupCharacterSelector();
+                    
+                    // Initialize equipment system
+                    this.initializeEquipmentSystem();
+                    
+                    this.initialized = true;
+                    document.getElementById('loading').style.display = 'none';
+                    document.getElementById('equipment-container').style.display = 'block';
+                    
+                } catch (error) {
+                    console.error('Failed to initialize extension:', error);
+                    this.showError('Failed to initialize Equipment Manager: ' + error.message);
+                }
+            }
+
+            async loadCharacters() {
+                try {
+                    // Get metadata for character data storage
+                    const metadata = await OBR.scene.getMetadata();
+                    const charactersData = metadata['equipment-manager/characters'] || {};
+                    
+                    // Convert to Map for easier management
+                    this.characters = new Map(Object.entries(charactersData));
+                    
+                    // If no characters exist, create a default one
+                    if (this.characters.size === 0) {
+                        const defaultCharacter = {
+                            id: 'default',
+                            name: 'My Character',
+                            equipment: {}
+                        };
+                        this.characters.set('default', defaultCharacter);
+                        await this.saveCharacters();
+                    }
+                    
+                } catch (error) {
+                    console.error('Failed to load characters:', error);
+                    // Create a default character if loading fails
+                    this.characters.set('default', {
+                        id: 'default',
+                        name: 'My Character',
+                        equipment: {}
+                    });
+                }
+            }
+
+            async saveCharacters() {
+                try {
+                    const charactersData = Object.fromEntries(this.characters);
+                    await OBR.scene.setMetadata({
+                        'equipment-manager/characters': charactersData
+                    });
+                } catch (error) {
+                    console.error('Failed to save characters:', error);
+                }
+            }
+
+            setupCharacterSelector() {
+                const select = document.getElementById('character-select');
+                select.innerHTML = '';
+                
+                // Add characters to selector
+                for (const [id, character] of this.characters) {
+                    const option = document.createElement('option');
+                    option.value = id;
+                    option.textContent = character.name;
+                    select.appendChild(option);
+                }
+                
+                // Add "New Character" option
+                const newOption = document.createElement('option');
+                newOption.value = 'new';
+                newOption.textContent = '+ Create New Character';
+                select.appendChild(newOption);
+                
+                // Set up event listener
+                select.addEventListener('change', (e) => {
+                    if (e.target.value === 'new') {
+                        this.createNewCharacter();
+                    } else {
+                        this.selectCharacter(e.target.value);
+                    }
+                });
+                
+                // Select first character by default
+                if (this.characters.size > 0) {
+                    const firstCharacterId = this.characters.keys().next().value;
+                    select.value = firstCharacterId;
+                    this.selectCharacter(firstCharacterId);
+                }
+            }
+
+            async createNewCharacter() {
+                const name = prompt('Enter character name:');
+                if (!name) {
+                    // Reset selector to current character
+                    document.getElementById('character-select').value = this.currentCharacter?.id || '';
+                    return;
+                }
+                
+                const id = 'char_' + Date.now();
+                const newCharacter = {
+                    id: id,
+                    name: name,
+                    equipment: {}
+                };
+                
+                this.characters.set(id, newCharacter);
+                await this.saveCharacters();
+                
+                // Refresh selector and select new character
+                this.setupCharacterSelector();
+                document.getElementById('character-select').value = id;
+                this.selectCharacter(id);
+            }
+
+            selectCharacter(characterId) {
+                if (!characterId || !this.characters.has(characterId)) return;
+                
+                this.currentCharacter = this.characters.get(characterId);
+                
+                // Update equipment system with character data
+                if (this.equipmentSystem) {
+                    this.equipmentSystem.setData(this.currentCharacter.equipment);
+                }
+            }
+
+            initializeEquipmentSystem() {
+                const options = {
+                    initialData: this.currentCharacter?.equipment || {},
+                    onDataChanged: (data) => {
+                        this.saveEquipmentData(data);
+                    },
+                    onEncumbranceChanged: (info) => {
+                        // Could trigger notifications or visual indicators
+                        console.log('Encumbrance changed:', info);
+                    },
+                    onEquipmentChanged: (equipped) => {
+                        // Could update character stats or trigger events
+                        console.log('Equipment changed:', equipped);
+                    },
+                    enableEncumbranceWarning: true,
+                    enableGoldTracking: true,
+                    enableBagSelection: true
+                };
+                
+                this.equipmentSystem = new EquipmentSystem('equipment-container', options);
+            }
+
+            async saveEquipmentData(data) {
+                if (!this.currentCharacter) return;
+                
+                try {
+                    this.currentCharacter.equipment = data;
+                    this.characters.set(this.currentCharacter.id, this.currentCharacter);
+                    await this.saveCharacters();
+                } catch (error) {
+                    console.error('Failed to save equipment data:', error);
+                }
+            }
+
+            showError(message) {
+                const container = document.getElementById('error-container');
+                container.innerHTML = `<div class="error">${message}</div>`;
+                document.getElementById('loading').style.display = 'none';
+            }
+        }
+
+        // Initialize the extension when the page loads
+        const extension = new OwlbearEquipmentExtension();
+        extension.init();
+    </script>
+</body>
+</html>

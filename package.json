@@ -1,0 +1,32 @@
+{
+  "name": "owlbear-equipment-manager",
+  "version": "1.0.0",
+  "description": "A comprehensive equipment and inventory management system for RPG characters in Owlbear Rodeo",
+  "main": "index.html",
+  "scripts": {
+    "dev": "python3 -m http.server 8080",
+    "serve": "python3 -m http.server 8080"
+  },
+  "keywords": [
+    "owlbear-rodeo",
+    "rpg",
+    "equipment",
+    "inventory",
+    "character-sheet",
+    "dnd",
+    "tabletop"
+  ],
+  "author": "Equipment System Developer",
+  "license": "MIT",
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/owlbear-equipment-manager"
+  },
+  "files": [
+    "index.html",
+    "manifest.json",
+    "standalone-equipment-system.js",
+    "icon.svg",
+    "README.md"
+  ]
+}

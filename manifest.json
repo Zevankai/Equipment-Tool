@@ -1,0 +1,13 @@
+{
+  "name": "Equipment Manager",
+  "version": "1.0.0", 
+  "description": "A comprehensive equipment and inventory management system for RPG characters. Track weapons, armor, items, gold, and encumbrance with an intuitive interface.",
+  "author": "Equipment System Developer",
+  "icon": "/icon.svg",
+  "action": {
+    "title": "Equipment Manager",
+    "icon": "/icon.svg",
+    "popover": "/index.html"
+  },
+  "permissions": ["*"]
+}
