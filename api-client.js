@@ -39,13 +39,19 @@ class EquipmentAPIClient {
         }
 
         try {
+            const controller = new AbortController();
+            const timeoutId = setTimeout(() => controller.abort(), 5000);
+            
             const response = await fetch(`${this.baseURL}/api/health`, {
                 method: 'GET',
-                timeout: 5000
+                signal: controller.signal
             });
+            
+            clearTimeout(timeoutId);
             this.backendAvailable = response.ok;
             return response.ok;
         } catch (error) {
+            console.log('Backend health check failed:', error.message);
             this.backendAvailable = false;
             return false;
         }

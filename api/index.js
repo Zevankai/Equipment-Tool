@@ -14,18 +14,13 @@ module.exports = async function handler(req, res) {
     return;
   }
 
-  try {
-    // Simple health check - could be expanded to check database connectivity
-    res.status(200).json({
-      status: 'healthy',
-      timestamp: new Date().toISOString(),
-      service: 'equipment-manager-api'
-    });
-  } catch (error) {
-    res.status(500).json({
-      status: 'unhealthy',
-      error: error.message,
-      timestamp: new Date().toISOString()
-    });
-  }
-}
+  res.status(200).json({
+    message: 'Equipment Manager API is running',
+    timestamp: new Date().toISOString(),
+    endpoints: [
+      '/api/health',
+      '/api/characters',
+      '/api/sync'
+    ]
+  });
+};
