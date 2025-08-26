@@ -177,6 +177,9 @@
     <!-- Include the Owlbear Rodeo SDK -->
     <script src="https://sdk.owlbear.rodeo/latest/owlbear-rodeo.min.js"></script>
     
+    <!-- Include the API Client -->
+    <script src="api-client.js"></script>
+    
     <!-- Include the Equipment System -->
     <script src="standalone-equipment-system.js"></script>
     
@@ -187,6 +190,13 @@
                 this.currentCharacter = null;
                 this.characters = new Map();
                 this.initialized = false;
+                this.roomId = null;
+                
+                // Initialize API client for backend integration
+                this.apiClient = new EquipmentAPIClient({
+                    onError: (error) => console.error('API Error:', error),
+                    onSyncConflict: (conflict) => this.handleSyncConflict(conflict)
+                });
             }
 
             async init() {
@@ -202,7 +212,11 @@
                         return;
                     }
                     
-                    // Load character data
+                    // Get room ID for backend synchronization
+                    this.roomId = await OBR.room.getId();
+                    console.log('Room ID:', this.roomId);
+                    
+                    // Load character data (now supports backend sync)
                     await this.loadCharacters();
                     
                     // Set up character selector
@@ -223,9 +237,8 @@
 
             async loadCharacters() {
                 try {
-                    // Get metadata for character data storage
-                    const metadata = await OBR.scene.getMetadata();
-                    const charactersData = metadata['equipment-manager/characters'] || {};
+                    // Load characters using API client (handles both local and remote data)
+                    const charactersData = await this.apiClient.loadCharacters(this.roomId);
                     
                     // Convert to Map for easier management
                     this.characters = new Map(Object.entries(charactersData));
@@ -237,9 +250,14 @@
                             name: 'My Character',
                             equipment: {}
                         };
+                        
+                        // Save using API client
+                        await this.apiClient.saveCharacter(this.roomId, 'default', defaultCharacter);
                         this.characters.set('default', defaultCharacter);
-                        await this.saveCharacters();
                     }
+                    
+                    // Display sync status to user
+                    this.displaySyncStatus();
                     
                 } catch (error) {
                     console.error('Failed to load characters:', error);
@@ -254,10 +272,18 @@
 
             async saveCharacters() {
                 try {
+                    // Save using API client for better sync handling
+                    for (const [characterId, character] of this.characters) {
+                        await this.apiClient.saveCharacter(this.roomId, characterId, character);
+                    }
+                    
+                    // Also save to OBR metadata as fallback
                     const charactersData = Object.fromEntries(this.characters);
                     await OBR.scene.setMetadata({
                         'equipment-manager/characters': charactersData
                     });
+                    
+                    this.displaySyncStatus();
                 } catch (error) {
                     console.error('Failed to save characters:', error);
                 }
@@ -361,7 +387,21 @@
                 try {
                     this.currentCharacter.equipment = data;
                     this.characters.set(this.currentCharacter.id, this.currentCharacter);
-                    await this.saveCharacters();
+                    
+                    // Save using API client for backend sync
+                    await this.apiClient.saveCharacter(
+                        this.roomId, 
+                        this.currentCharacter.id, 
+                        this.currentCharacter
+                    );
+                    
+                    // Also save to OBR metadata as fallback
+                    const charactersData = Object.fromEntries(this.characters);
+                    await OBR.scene.setMetadata({
+                        'equipment-manager/characters': charactersData
+                    });
+                    
+                    this.displaySyncStatus();
                 } catch (error) {
                     console.error('Failed to save equipment data:', error);
                 }
@@ -371,6 +411,66 @@
                 const container = document.getElementById('error-container');
                 container.innerHTML = `<div class="error">${message}</div>`;
                 document.getElementById('loading').style.display = 'none';
+            }
+
+            displaySyncStatus() {
+                const status = this.apiClient.getSyncStatus();
+                const statusText = [];
+                
+                if (status.backendAvailable) {
+                    statusText.push('🌐 Backend Connected');
+                } else if (status.backendEnabled) {
+                    statusText.push('🔄 Backend Connecting...');
+                } else {
+                    statusText.push('💾 Local Storage Only');
+                }
+                
+                // Add a small status indicator to the page
+                let statusDiv = document.getElementById('sync-status');
+                if (!statusDiv) {
+                    statusDiv = document.createElement('div');
+                    statusDiv.id = 'sync-status';
+                    statusDiv.style.cssText = `
+                        position: fixed;
+                        bottom: 10px;
+                        right: 10px;
+                        background: rgba(0,0,0,0.8);
+                        color: white;
+                        padding: 8px 12px;
+                        border-radius: 4px;
+                        font-size: 12px;
+                        z-index: 1000;
+                    `;
+                    document.body.appendChild(statusDiv);
+                }
+                
+                statusDiv.textContent = statusText.join(' | ');
+            }
+
+            async handleSyncConflict(conflict) {
+                console.warn('Sync conflict detected:', conflict);
+                
+                // For now, prefer server data, but could show a dialog to user
+                const useServer = confirm(
+                    `Character "${conflict.characterId}" has conflicts between local and server data.\n\n` +
+                    `Click OK to use server data, or Cancel to keep local data.`
+                );
+                
+                if (useServer) {
+                    // Update local character with server data
+                    this.characters.set(conflict.characterId, {
+                        id: conflict.characterId,
+                        name: conflict.serverData.name,
+                        equipment: conflict.serverData.data
+                    });
+                    
+                    // Refresh UI if this is the current character
+                    if (this.currentCharacter?.id === conflict.characterId) {
+                        this.selectCharacter(conflict.characterId);
+                    }
+                }
+                
+                return useServer ? 'server' : 'local';
             }
         }
 

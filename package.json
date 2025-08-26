@@ -3,9 +3,18 @@
   "version": "1.0.0",
   "description": "A comprehensive equipment and inventory management system for RPG characters in Owlbear Rodeo",
   "main": "index.html",
+  "type": "module",
   "scripts": {
     "dev": "python3 -m http.server 8080",
-    "serve": "python3 -m http.server 8080"
+    "serve": "python3 -m http.server 8080",
+    "build": "echo 'Static files ready for deployment'",
+    "deploy": "vercel --prod"
+  },
+  "dependencies": {
+    "@neondatabase/serverless": "^0.9.0"
+  },
+  "devDependencies": {
+    "vercel": "^32.0.0"
   },
   "keywords": [
     "owlbear-rodeo",

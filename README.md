@@ -1,6 +1,6 @@
 # Equipment Manager - Owlbear Rodeo Extension
 
-A comprehensive equipment and inventory management system for RPG characters, designed as an extension for Owlbear Rodeo.
+A comprehensive equipment and inventory management system for RPG characters, designed as an extension for Owlbear Rodeo. Features both local storage and cloud synchronization via Vercel and Neon PostgreSQL.
 
 ## Features
 
@@ -13,26 +13,28 @@ A comprehensive equipment and inventory management system for RPG characters, de
 - **Character Support**: Manage equipment for multiple characters in the same room
 - **Search & Filtering**: Real-time search across item names, descriptions, and features
 - **Dark Theme**: Fully integrated with Owlbear Rodeo's dark interface
-- **Data Persistence**: Equipment data is saved to the room metadata for persistence
+- **Hybrid Data Storage**: Local storage for immediate response + cloud sync for cross-device access
+- **Backend Integration**: Optional Vercel + Neon PostgreSQL for enhanced persistence and sharing
+- **Automatic Sync**: Seamless synchronization between local and remote data with conflict resolution
 
 ## Installation
 
-### Method 1: Install from Extension Store (Recommended)
-1. In Owlbear Rodeo, go to Extensions
-2. Search for "Equipment Manager"
-3. Click Install
+### Method 1: Production Deployment (Recommended)
+1. Deploy to Vercel with Neon database backend
+2. See [DEPLOYMENT.md](./DEPLOYMENT.md) for complete setup instructions
+3. In Owlbear Rodeo, add extension with your Vercel URL: `https://your-project.vercel.app/manifest.json`
 
-### Method 2: Install from URL
-1. Host the extension files on a web server (GitHub Pages, Vercel, Netlify, etc.)
-2. In Owlbear Rodeo, go to Extensions
-3. Click "Add Extension"
-4. Enter the URL to your `manifest.json` file
-5. Click Add
+### Method 2: Quick Deploy (Local Storage Only)
+1. Fork this repository and enable GitHub Pages
+2. In Owlbear Rodeo, add extension: `https://yourusername.github.io/owlbear-equipment-manager/manifest.json`
+3. Extension will work with local storage only (no cross-device sync)
 
 ### Method 3: Local Development
 1. Clone this repository
-2. Run a local server: `python3 -m http.server 8080` or `npm run dev`
-3. In Owlbear Rodeo, add extension with URL: `http://localhost:8080/manifest.json`
+2. Install dependencies: `npm install`
+3. Copy environment config: `cp .env.example .env.local`
+4. Run local server: `npm run dev` or `vercel dev` (for backend testing)
+5. In Owlbear Rodeo, add extension: `http://localhost:8080/manifest.json`
 
 ## Usage
 
@@ -75,13 +77,16 @@ A comprehensive equipment and inventory management system for RPG characters, de
 ## Technical Details
 
 ### Data Storage
-- Character data is stored in Owlbear Rodeo room metadata
-- Each character's equipment is saved separately
-- Data persists across sessions within the same room
+- **Hybrid Approach**: Local storage (Owlbear Rodeo metadata) + Backend database (Neon PostgreSQL)
+- **Local First**: Immediate responsiveness with local storage
+- **Cloud Sync**: Cross-device synchronization via Vercel API
+- **Automatic Fallback**: Works offline, syncs when connection is restored
+- **Conflict Resolution**: Handles simultaneous edits across devices
 
 ### Permissions
 - The extension requires read/write access to room metadata
-- No external network requests (except for the Owlbear Rodeo SDK)
+- Optional backend API requests for cloud synchronization
+- All data scoped to individual room IDs for privacy
 
 ### Browser Compatibility
 - Works in all modern browsers supported by Owlbear Rodeo

@@ -1,173 +1,227 @@
-# Deployment Guide - Equipment Manager Extension
+# Equipment Manager - Deployment Guide
 
-This guide explains how to deploy your Equipment Manager extension for Owlbear Rodeo.
+This document provides comprehensive instructions for deploying the Equipment Manager Owlbear Rodeo Extension with backend support using Vercel and Neon.
 
-## Quick Start (Local Testing)
+## Overview
 
-1. **Run Local Server**:
-   ```bash
-   python3 serve.py
-   # Or alternatively:
-   python3 -m http.server 8080
-   # Or if you have Node.js:
-   npm run dev
+The Equipment Manager now supports both local storage (Owlbear Rodeo metadata) and backend persistence (Neon PostgreSQL via Vercel API). This hybrid approach provides:
+
+- **Immediate responsiveness** with local storage
+- **Cross-device synchronization** with backend storage
+- **Automatic fallback** when backend is unavailable
+- **Conflict resolution** for simultaneous edits
+
+## Prerequisites
+
+1. **Vercel Account**: Sign up at [vercel.com](https://vercel.com)
+2. **Neon Account**: Sign up at [neon.tech](https://neon.tech)
+3. **Git Repository**: Your code should be in a Git repository (GitHub, GitLab, etc.)
+
+## Step 1: Set Up Neon Database
+
+### 1.1 Create Neon Project
+1. Log into your Neon console
+2. Click "Create Project"
+3. Choose a name (e.g., "equipment-manager")
+4. Select a region close to your users
+5. Note down the connection string
+
+### 1.2 Initialize Database
+1. Connect to your Neon database using the provided connection string
+2. Run the initialization script:
+   ```sql
+   -- Copy and paste the contents of scripts/init-db.sql
    ```
+   Or use the Neon SQL Editor to run `/scripts/init-db.sql`
 
-2. **Add to Owlbear Rodeo**:
-   - Open Owlbear Rodeo in your browser
-   - Go to Extensions
-   - Click "Add Extension"
-   - Enter: `http://localhost:8080/manifest.json`
-   - Click "Add"
+### 1.3 Get Connection Details
+From your Neon dashboard, copy the connection string. It should look like:
+```
+postgresql://username:password@host:port/database?sslmode=require
+```
 
-3. **Test the Extension**:
-   - Create or join a room
-   - Enable the "Equipment Manager" extension
-   - The extension should appear in your sidebar
+## Step 2: Deploy to Vercel
 
-## Production Deployment
+### 2.1 Connect Repository
+1. Go to [vercel.com/new](https://vercel.com/new)
+2. Import your Git repository
+3. Vercel will auto-detect the project settings
 
-### Option 1: GitHub Pages (Free)
+### 2.2 Configure Environment Variables
+In Vercel's project settings, add these environment variables:
 
-1. **Create GitHub Repository**:
-   ```bash
-   git init
-   git add .
-   git commit -m "Initial commit"
-   git branch -M main
-   git remote add origin https://github.com/yourusername/owlbear-equipment-manager.git
-   git push -u origin main
-   ```
+| Name | Value | Notes |
+|------|-------|-------|
+| `DATABASE_URL` | Your Neon connection string | Required for backend functionality |
+| `NODE_ENV` | `production` | Recommended |
 
-2. **Enable GitHub Pages**:
-   - Go to your repository settings
-   - Scroll to "Pages" section
-   - Select "Deploy from a branch"
-   - Choose "main" branch and "/ (root)"
-   - Save
+### 2.3 Deploy
+1. Click "Deploy" 
+2. Vercel will build and deploy your project
+3. Note the deployment URL (e.g., `https://your-project.vercel.app`)
 
-3. **Update Manifest URL**:
-   - Your extension will be available at: `https://yourusername.github.io/owlbear-equipment-manager/manifest.json`
+## Step 3: Configure Owlbear Extension
 
-### Option 2: Vercel (Free)
+### 3.1 Update Manifest URL
+Your extension manifest will be available at:
+```
+https://your-project.vercel.app/manifest.json
+```
 
-1. **Install Vercel CLI**:
-   ```bash
-   npm i -g vercel
-   ```
+### 3.2 Install in Owlbear Rodeo
+1. Open Owlbear Rodeo
+2. Go to Extensions
+3. Click "Add Extension"
+4. Enter your manifest URL
+5. Click "Add"
 
-2. **Deploy**:
-   ```bash
-   vercel
-   ```
+## Features and Architecture
 
-3. **Your extension will be available at the provided Vercel URL**
+### Hybrid Storage System
+- **Primary**: Backend database (Neon PostgreSQL)
+- **Fallback**: Local storage (Owlbear Rodeo metadata)
+- **Sync**: Automatic synchronization between local and remote
 
-### Option 3: Netlify (Free)
+### API Endpoints
+- `GET /api/characters?roomId={id}` - Load characters for a room
+- `POST /api/characters` - Create/update character
+- `DELETE /api/characters?roomId={id}&characterId={id}` - Delete character
+- `POST /api/sync` - Synchronize local and remote data
+- `GET /api/health` - Health check
 
-1. **Install Netlify CLI**:
-   ```bash
-   npm i -g netlify-cli
-   ```
+### Data Flow
+1. Extension loads → Check backend availability
+2. Load from local storage (immediate)
+3. Sync with backend (if available)
+4. Resolve conflicts (user prompt)
+5. Save changes → Local first, then backend
 
-2. **Deploy**:
-   ```bash
-   netlify deploy --prod --dir .
-   ```
+## Local Development
 
-### Option 4: Cloudflare Pages (Free)
+### Setup
+```bash
+# Install dependencies
+npm install
 
-1. **Connect your GitHub repository to Cloudflare Pages**
-2. **Set build settings**:
-   - Build command: (leave empty)
-   - Build output directory: (leave empty or set to "/")
-3. **Deploy**
+# Set up environment
+cp .env.example .env.local
+# Edit .env.local with your database URL
 
-## Adding to Owlbear Rodeo Extension Store
+# Start development server
+npm run dev
+```
 
-Once deployed, you can submit your extension to the official store:
+### Testing Backend Locally
+For local API testing, you can use Vercel CLI:
+```bash
+# Install Vercel CLI
+npm install -g vercel
 
-1. **Fork the Extensions Repository**:
-   ```bash
-   git clone https://github.com/owlbear-rodeo/extensions.git
-   ```
-
-2. **Add Your Extension**:
-   - Edit `extensions.json`
-   - Add your extension details:
-   ```json
-   {
-     "title": "Equipment Manager",
-     "description": "A comprehensive equipment and inventory management system for RPG characters",
-     "author": "Your Name",
-     "image": "/path/to/screenshot.png",
-     "tags": ["character-sheet", "inventory", "equipment", "rpg"],
-     "manifest": "https://your-domain.com/manifest.json",
-     "contact": "your-email@example.com"
-   }
-   ```
-
-3. **Submit Pull Request**:
-   - Create a branch with your extension
-   - Submit a pull request to the main repository
-   - Include screenshots and description
-
-## Verification Process
-
-To get your extension verified:
-
-1. **Ensure Quality Standards**:
-   - Works across devices and browsers
-   - Follows accessibility guidelines
-   - Uses Owlbear Rodeo APIs properly
-   - Has proper error handling
-
-2. **Request Verification**:
-   - After your extension is in the store
-   - Comment on your PR with: `/verify Equipment Manager`
-   - The team will review and verify if it meets standards
-
-## File Checklist
-
-Make sure you include these files in your deployment:
-
-- ✅ `index.html` - Main extension interface
-- ✅ `manifest.json` - Extension manifest
-- ✅ `standalone-equipment-system.js` - Core functionality
-- ✅ `icon.svg` - Extension icon
-- ✅ `README.md` - Documentation
-- ✅ `package.json` - Package information
-
-## Testing Checklist
-
-Before deploying, test:
-
-- ✅ Extension loads without errors
-- ✅ Character creation and selection works
-- ✅ Equipment can be added, edited, and equipped
-- ✅ Data persists between sessions
-- ✅ Encumbrance calculation works correctly
-- ✅ Gold/currency system functions properly
-- ✅ Search and filtering work
-- ✅ Responsive design on mobile
-- ✅ Dark theme styling is correct
+# Start local development
+vercel dev
+```
 
 ## Troubleshooting
 
-### Common Issues:
+### Backend Not Available
+- Extension automatically falls back to local storage
+- Data is preserved and will sync when backend becomes available
+- Check Vercel function logs for errors
 
-1. **CORS Errors**: Make sure your hosting platform serves files with proper headers
-2. **SDK Not Loading**: Verify the Owlbear Rodeo SDK URL is correct
-3. **Manifest Not Found**: Check the manifest.json file is accessible at the provided URL
-4. **Data Not Saving**: Ensure the extension has proper permissions in the manifest
+### Database Connection Issues
+- Verify `DATABASE_URL` environment variable
+- Check Neon database status
+- Ensure connection string includes `?sslmode=require`
 
-### Debug Mode:
+### CORS Issues
+- All API endpoints include proper CORS headers
+- Verify your domain is not blocked
 
-Open browser developer tools to see console messages and errors. The extension logs detailed information about initialization and data operations.
+### Sync Conflicts
+- Extension prompts user to choose between local/server data
+- Default behavior prefers server data
+- Manual resolution available through conflict dialog
 
-## Support
+## Monitoring and Maintenance
 
-For deployment issues:
-- Check the Owlbear Rodeo Discord #extensions channel
-- Review the official documentation at docs.owlbear.rodeo
-- Open an issue on the GitHub repository
+### Vercel Analytics
+- Function execution logs available in Vercel dashboard
+- Monitor API response times and error rates
+
+### Neon Database
+- Monitor connection count and query performance
+- Database metrics available in Neon console
+
+### Extension Logs
+- Client-side logs available in browser developer tools
+- Check for API errors and sync issues
+
+## Security Considerations
+
+### Database Security
+- Connection string uses SSL (`sslmode=require`)
+- Neon provides automatic connection pooling
+- No sensitive data stored beyond character equipment
+
+### API Security
+- CORS properly configured for Owlbear Rodeo
+- No authentication required (data scoped by room ID)
+- Rate limiting handled by Vercel
+
+### Data Privacy
+- Data scoped to individual Owlbear Rodeo rooms
+- No cross-room data access
+- Local storage fallback preserves privacy
+
+## Scaling Considerations
+
+### Neon Database
+- Free tier: 512 MB storage, 1 GB data transfer
+- Paid tiers: Unlimited storage, higher limits
+- Automatic scaling with usage
+
+### Vercel Functions
+- Free tier: 100 GB-hours, 100,000 invocations
+- Automatic scaling based on demand
+- Edge deployment for global performance
+
+## Migration from Local-Only
+
+Existing installations will automatically migrate:
+1. Local data preserved during upgrade
+2. Backend sync initiated on first load
+3. No data loss during transition
+4. Gradual rollout possible
+
+## Support and Updates
+
+### Version Management
+- Semantic versioning in `package.json`
+- Vercel auto-deploys from main branch
+- Manual deployments via Vercel CLI
+
+### Backup Strategy
+- Neon provides automatic backups
+- Local storage provides additional redundancy
+- Export functionality available in extension
+
+---
+
+## Quick Reference
+
+### URLs
+- **Production**: `https://your-project.vercel.app`
+- **Manifest**: `https://your-project.vercel.app/manifest.json`
+- **API Health**: `https://your-project.vercel.app/api/health`
+
+### Environment Variables
+```bash
+DATABASE_URL=postgresql://user:pass@host:port/db?sslmode=require
+NODE_ENV=production
+```
+
+### Key Files
+- `/api/*` - Vercel serverless functions
+- `/scripts/init-db.sql` - Database initialization
+- `/api-client.js` - Frontend API integration
+- `/vercel.json` - Vercel configuration
